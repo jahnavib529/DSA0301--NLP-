@@ -1,0 +1,43 @@
+from collections import Counter
+
+corpus = [
+    "I love NLP",
+    "I love Python",
+    "Python loves NLP"
+]
+
+unigrams = Counter()
+bigrams = Counter()
+vocab = set()
+
+for sentence in corpus:
+    words = ["<s>"] + sentence.lower().split() + ["</s>"]
+    vocab.update(words)
+    unigrams.update(words)
+
+    for i in range(len(words) - 1):
+        bigrams[(words[i], words[i+1])] += 1
+
+V = len(vocab)
+
+pairs = [
+    ("i", "love"),
+    ("love", "nlp"),
+    ("love", "java")
+]
+
+print("Vocabulary Size =", V)
+
+for prev, word in pairs:
+    bigram_count = bigrams[(prev, word)]
+    prev_count = unigrams[prev]
+
+    # MLE
+    mle = bigram_count / prev_count if prev_count > 0 else 0
+
+    # Laplace
+    laplace = (bigram_count + 1) / (prev_count + V)
+
+    print(f"\nP({word}|{prev})")
+    print("MLE      =", round(mle, 4))
+    print("Laplace  =", round(laplace, 4))
