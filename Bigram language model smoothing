@@ -1,0 +1,79 @@
+from collections import Counter
+
+class BigramLanguageModel:
+    def __init__(self):
+        self.unigram_counts = Counter()
+        self.bigram_counts = Counter()
+        self.vocab = set()
+
+    def train(self, corpus):
+        """
+        corpus: list of sentences
+        Example:
+        [
+            "I love NLP",
+            "I love Python",
+            "Python loves NLP"
+        ]
+        """
+
+        for sentence in corpus:
+            words = ["<s>"] + sentence.lower().split() + ["</s>"]
+
+            self.vocab.update(words)
+
+            # Count unigrams
+            self.unigram_counts.update(words)
+
+            # Count bigrams
+            for i in range(len(words) - 1):
+                self.bigram_counts[(words[i], words[i + 1])] += 1
+
+        self.V = len(self.vocab)
+
+    def bigram_probability(self, prev_word, word):
+        """
+        Computes Laplace-smoothed bigram probability.
+        """
+        bigram_count = self.bigram_counts[(prev_word, word)]
+        prev_count = self.unigram_counts[prev_word]
+
+        return (bigram_count + 1) / (prev_count + self.V)
+
+    def sentence_probability(self, sentence):
+        """
+        Computes probability of an entire sentence.
+        """
+        words = ["<s>"] + sentence.lower().split() + ["</s>"]
+
+        prob = 1.0
+
+        for i in range(len(words) - 1):
+            prob *= self.bigram_probability(words[i], words[i + 1])
+
+        return prob
+
+
+# ---------------- Example ----------------
+
+corpus = [
+    "I love NLP",
+    "I love Python",
+    "Python loves NLP"
+]
+
+model = BigramLanguageModel()
+model.train(corpus)
+
+print("Vocabulary:", model.vocab)
+
+print("\nBigram Probabilities:")
+print("P(love | i) =", model.bigram_probability("i", "love"))
+print("P(nlp | love) =", model.bigram_probability("love", "nlp"))
+print("P(python | love) =", model.bigram_probability("love", "python"))
+print("P(java | love) =", model.bigram_probability("love", "java"))  # unseen word
+
+sentence = "I love NLP"
+print("\nSentence Probability:")
+print(model.sentence_probability(sentence))
+
