@@ -1,0 +1,71 @@
+from collections import Counter
+
+class BackoffLanguageModel:
+    def __init__(self, alpha=0.4):
+        self.alpha = alpha
+        self.unigram_counts = Counter()
+        self.bigram_counts = Counter()
+        self.total_words = 0
+
+    def train(self, corpus):
+        """
+        corpus: list of sentences
+        """
+        for sentence in corpus:
+            words = ["<s>"] + sentence.lower().split() + ["</s>"]
+
+            self.unigram_counts.update(words)
+            self.total_words += len(words)
+
+            for i in range(len(words) - 1):
+                self.bigram_counts[(words[i], words[i + 1])] += 1
+
+    def unigram_probability(self, word):
+        return self.unigram_counts[word] / self.total_words
+
+    def bigram_probability(self, prev_word, word):
+        """
+        Simple Backoff:
+        - Use bigram probability if seen.
+        - Otherwise back off to unigram probability.
+        """
+        if self.bigram_counts[(prev_word, word)] > 0:
+            return (
+                self.bigram_counts[(prev_word, word)]
+                / self.unigram_counts[prev_word]
+            )
+        else:
+            return self.alpha * self.unigram_probability(word)
+
+    def sentence_probability(self, sentence):
+        words = ["<s>"] + sentence.lower().split() + ["</s>"]
+
+        prob = 1.0
+        for i in range(len(words) - 1):
+            prob *= self.bigram_probability(words[i], words[i + 1])
+
+        return prob
+
+
+# ---------------- Example ----------------
+
+corpus = [
+    "I love NLP",
+    "I love Python",
+    "Python loves NLP"
+]
+
+model = BackoffLanguageModel(alpha=0.4)
+model.train(corpus)
+
+print("Seen Bigram:")
+print("P(love | i) =", model.bigram_probability("i", "love"))
+
+print("\nSeen Bigram:")
+print("P(nlp | love) =", model.bigram_probability("love", "nlp"))
+
+print("\nUnseen Bigram (Backoff):")
+print("P(java | love) =", model.bigram_probability("love", "java"))
+
+print("\nSentence Probability:")
+print(model.sentence_probability("I love NLP"))
